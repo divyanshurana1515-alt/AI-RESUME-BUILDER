@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        xintegrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        :root {
+            --primary-bg: #f7f8fc;
+            --secondary-bg: #ffffff;
+            --primary-text: #1a202c;
+            --secondary-text: #718096;
+            --accent-color: #4f46e5;
+            --accent-hover: #4338ca;
+            --border-color: #e2e8f0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-bg);
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            word-wrap: break-word;
+            transition: transform 0.2s ease-out;
+        }
+
+        #resume-preview {
+            font-family: 'Lora', serif;
+        }
+
+        .resume-section h3 {
+            font-family: 'Inter', sans-serif;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--primary-text);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .resume-preview {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        #chat-messages::-webkit-scrollbar,
+        #modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track,
+        #modal-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb,
+        #modal-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-indicator span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1.0);
+            }
+        }
+
+        #resume-photo {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border: 6px solid white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -4px rgba(0, 0, 0, .1);
+        }
+
+        .photo-circle {
+            border-radius: 9999px;
+        }
+
+        .photo-square {
+            border-radius: 0.75rem;
+        }
+
+        .resume-header {
+            text-align: center;
+        }
+
+        .resume-header.has-photo {
+            display: flex;
+            text-align: left;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .resume-header.photo-right {
+            flex-direction: row-reverse;
+        }
+
+        .resume-header .justify-center {
+            justify-content: center;
+        }
+
+        .resume-header.has-photo .justify-center {
+            justify-content: flex-start;
+        }
+
+        .control-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800">
+
+    <nav class="bg-white shadow-sm w-full border-b border-slate-200 z-10 sticky top-0">
+        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center"><span class="font-bold text-xl text-indigo-600">ResumeCraft AI</span>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="#"
+                                class="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                            <a href="#"
+                                class="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">About</a>
+                            <a href="#contact-section"
+                                class="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <!-- Auth Buttons Placeholder -->
+                    <div id="auth-container" class="flex items-center space-x-2">
+                        <button id="login-btn"
+                            class="text-gray-500 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium cursor-not-allowed">Login</button>
+                        <button id="signup-btn"
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 cursor-not-allowed">Sign
+                            Up</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="max-w-screen-xl mx-auto w-full flex flex-col md:flex-row">
+        <div
+            class="w-full md:w-1/2 flex flex-col bg-white p-4 border-r border-slate-200 md:sticky md:top-16 md:h-[calc(100vh-4rem)]">
+            <header class="text-center mb-4 flex-shrink-0">
+                <h1 class="text-2xl font-bold text-slate-900">AI Resume Agent</h1>
+                <p class="text-sm text-slate-500">Your personal career assistant</p>
+            </header>
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 bg-slate-50 rounded-lg space-y-4"></div>
+            <div id="input-area" class="mt-4 flex flex-shrink-0">
+                <input type="text" id="user-input"
+                    class="w-full px-4 py-3 border border-slate-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                    placeholder="Type your answer here...">
+                <button id="send-btn"
+                    class="bg-indigo-600 text-white px-6 py-3 rounded-r-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-indigo-300 transition flex items-center"><svg
+                        xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg></button>
+            </div>
+        </div>
+
+        <div class="w-full md:w-1/2 flex flex-col p-4 md:p-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-slate-900">Live Resume Preview</h2>
+                <div class="flex space-x-2">
+                    <button id="preview-btn"
+                        class="control-btn bg-gray-200 text-gray-800 hover:bg-gray-300">Preview</button>
+                    <button id="edit-btn" class="control-btn bg-blue-100 text-blue-700 hover:bg-blue-200">Edit</button>
+                    <button id="download-btn"
+                        class="control-btn bg-green-100 text-green-700 hover:bg-green-200">Download PDF</button>
+                </div>
+            </div>
+            <div id="resume-preview" class="resume-preview flex-1 bg-white p-12 rounded-lg">
+                <div id="resume-header" class="resume-header mb-8">
+                    <div id="photo-container" class="hidden flex-shrink-0"><img id="resume-photo" src=""
+                            alt="User profile photo"></div>
+                    <div class="flex-grow">
+                        <h1 id="resume-name" class="text-5xl font-bold text-slate-800" data-path="name">Your Name</h1>
+                        <div id="resume-contact"
+                            class="text-slate-500 mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+                            <span class="contact-item" id="resume-location" data-path="location">City, State</span>
+                            <span class="contact-item" id="resume-phone" data-path="phone">Your Phone</span>
+                            <span class="contact-item" id="resume-email" data-path="email">your.email@example.com</span>
+                            <a href="#" class="contact-item text-indigo-600 hover:underline" id="resume-linkedin"
+                                data-path="linkedin">LinkedIn</a>
+                            <a href="#" class="contact-item text-indigo-600 hover:underline" id="resume-portfolio"
+                                data-path="portfolio">Portfolio</a>
+                            <a href="#" class="contact-item text-indigo-600 hover:underline" id="resume-github"
+                                data-path="github">GitHub</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="resume-section" id="summary-section">
+                    <h3>Summary</h3>
+                    <p id="resume-summary" class="text-slate-700 leading-relaxed" data-path="summary">A brief
+                        professional summary will appear here.</p>
+                </div>
+                <div class="resume-section mt-8" id="experience-section">
+                    <h3>Experience</h3>
+                    <div id="resume-experience-list">
+                        <p class="text-slate-500 italic">Your work experience will be listed here.</p>
+                    </div>
+                </div>
+                <div class="resume-section mt-8" id="education-section">
+                    <h3>Education</h3>
+                    <div id="resume-education-list">
+                        <p class="text-slate-500 italic">Your education details will be listed here.</p>
+                    </div>
+                </div>
+                <div class="resume-section mt-8" id="skills-section">
+                    <h3>Skills</h3>
+                    <p id="resume-skills" class="text-slate-700" data-path="skills">A list of your skills will be
+                        generated here.</p>
+                </div>
+                <div class="resume-section mt-8" id="hobbies-section">
+                    <h3>Hobbies & Interests</h3>
+                    <p id="resume-hobbies" class="text-slate-700" data-path="hobbies">Your hobbies will be listed here.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="preview-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden justify-center items-center p-4 z-50">
+        <div class="bg-white w-full max-w-4xl h-[95%] overflow-y-auto rounded-lg relative"><button id="close-modal-btn"
+                class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
+            <div id="modal-content" class="p-8 md:p-12"></div>
+        </div>
+    </div>
+    <input type="file" id="photo-upload-input" class="hidden" accept="image/*">
+
+    <footer id="contact-section" class="bg-white border-t border-slate-200 py-12">
+        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">Contact Me</h2>
+            <p class="text-slate-600 mb-6">Feel free to reach out via phone or social media.</p>
+            <div
+                class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-8 text-slate-700">
+                <div class="flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="text-indigo-500">
+                        <path
+                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                        </path>
+                    </svg>
+                    <span>+91 2894723492</span>
+                </div>
+                <a href="https://www.instagram.com/divyanshuranaa" target="_blank"
+                    class="flex items-center space-x-2 hover:text-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="text-indigo-500">
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                    <span>@divyanshuranaa</span>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- App Logic -->
+    <script>
+        // --- EXISTING APP LOGIC ---
+        const GEMINI_API_KEY = "AIzaSyB8RxcsCErpMt20EUHss-bIcHHGfH7e1Gg"; // PASTE YOUR API KEY HERE
+
+        const chatMessages = document.getElementById('chat-messages'), userInput = document.getElementById('user-input'), sendBtn = document.getElementById('send-btn'), previewBtn = document.getElementById('preview-btn'), editBtn = document.getElementById('edit-btn'), downloadBtn = document.getElementById('download-btn'), previewModal = document.getElementById('preview-modal'), closeModalBtn = document.getElementById('close-modal-btn'), modalContent = document.getElementById('modal-content'), photoUploadInput = document.getElementById('photo-upload-input');
+
+        const resumeData = { name: 'Your Name', location: 'City, State', phone: 'Your Phone', email: 'your.email@example.com', linkedin: '#', portfolio: '#', github: '#', photo: { src: null, shape: 'square', position: 'left' }, summary: 'A brief professional summary will appear here once you provide the details.', experience: [], education: [], skills: '', hobbies: '' };
+        let currentStep = 0, tempExperience = {}, tempEducation = {}, lastAIContext = { type: null, rawInput: null, generatedOutput: null };
+        let isEditingState = false;
+        let preEditStep = 0;
+
+        const conversationFlow = [
+            { key: 'name', question: "Hello! I'm your AI Resume Assistant. Let's build a resume that stands out. First, what's your full name?" },
+            { key: 'location', question: "Great to meet you! What city and state do you live in?" },
+            { key: 'phone', question: "What's the best phone number to reach you at?" },
+            { key: 'email', question: "And your email address?" },
+            { key: 'linkedin', question: "Please provide the full URL to your LinkedIn profile. (You can also say 'skip')." },
+            { key: 'portfolio', question: "Do you have a personal website or portfolio URL to share? (Or 'skip')." },
+            { key: 'github', question: "And how about a GitHub profile URL? (Or 'skip')." },
+            { key: 'ask_photo', question: "Would you like to add a profile picture? (yes/no)" },
+            { key: 'photo_shape', question: "Great! What shape would you like for the photo frame: 'circle' or 'square'?" },
+            { key: 'photo_position', question: "And where should it be positioned: 'left' or 'right'?" },
+            { key: 'photo_upload', question: "Perfect. For best results, use a square (1:1 ratio) image over 200x200 pixels. Click below to upload." },
+            { key: 'summary_intro', question: "Let's work on your summary. Tell me about your current role, experience, and key achievements. I'll refine it for you. If you're not sure, just ask for help!" },
+            { key: 'experience_intro', question: "Let's detail your work experience, starting with your most recent position. What was your job title?" },
+            { key: 'experience_company', question: "Which company did you work for?" },
+            { key: 'experience_location', question: "And where was this located (City, State)?" },
+            { key: 'experience_dates', question: "When did you work there? (e.g., 'Aug 2020 - Present')." },
+            { key: 'experience_duties', question: "Describe your key responsibilities and accomplishments in this role. List 3-4 bullet points." },
+            { key: 'experience_another', question: "Experience added. Would you like to add another position? (yes/no)." },
+            { key: 'education_intro', question: "Let's move on to education. What was your degree or field of study?" },
+            { key: 'education_school', question: "Which institution did you attend?" },
+            { key: 'education_dates', question: "What was your graduation year?" },
+            { key: 'education_another', question: "Education added. Would you like to add another degree? (yes/no)." },
+            { key: 'skills', question: "Next, list your skills. Please provide a comma-separated list." },
+            { key: 'hobbies', question: "Finally, would you like to add any hobbies or interests? (Or type 'skip')." },
+            { key: 'finish', question: "Fantastic! Your resume draft is complete. You can now Download it." }
+        ];
+
+        sendBtn.addEventListener('click', handleUserInput);
+        userInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleUserInput(); });
+        previewBtn.addEventListener('click', showPreviewModal);
+        editBtn.addEventListener('click', toggleManualEdit);
+        downloadBtn.addEventListener('click', downloadResumeAsPDF);
+        closeModalBtn.addEventListener('click', hidePreviewModal);
+        photoUploadInput.addEventListener('change', handlePhotoFile);
+        chatMessages.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'upload-photo-btn') {
+                triggerPhotoUpload();
+            }
+        });
+
+
+        function handleUserInput() {
+            const text = userInput.value.trim();
+            if (!text) return;
+            addMessage(text, 'user');
+            userInput.value = '';
+            processStep(text);
+        }
+
+        function triggerPhotoUpload() { photoUploadInput.click(); }
+
+        function handlePhotoFile(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    resumeData.photo.src = e.target.result;
+                    updateResumePreview();
+                    addMessage("Your photo has been uploaded!", 'agent');
+                    currentStep++;
+                    if (conversationFlow[currentStep]) askQuestion(conversationFlow[currentStep].question);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function processStep(userInputText) {
+            if (await handleCommand(userInputText)) return;
+            const step = conversationFlow[currentStep];
+            if (!step) return;
+
+            let shouldAskNextQuestion = true;
+            const skipKeywords = ['skip', 'none', 'n/a'];
+
+            switch (step.key) {
+                case 'name': case 'location': case 'phone': case 'email': resumeData[step.key] = userInputText; break;
+                case 'linkedin': case 'portfolio': case 'github':
+                    const isUrl = userInputText.startsWith('http') || userInputText.startsWith('www');
+                    const shouldSkip = skipKeywords.includes(userInputText.toLowerCase().trim());
+                    resumeData[step.key] = (shouldSkip && !isUrl) ? '#' : userInputText;
+                    break;
+                case 'ask_photo': if (!userInputText.toLowerCase().startsWith('y')) { currentStep = conversationFlow.findIndex(s => s.key === 'summary_intro') - 1; } break;
+                case 'photo_shape': const shape = userInputText.toLowerCase(); if (shape.includes('circle')) resumeData.photo.shape = 'circle'; else resumeData.photo.shape = 'square'; break;
+                case 'photo_position': const pos = userInputText.toLowerCase(); if (pos.includes('right')) resumeData.photo.position = 'right'; else resumeData.photo.position = 'left'; break;
+                case 'photo_upload': shouldAskNextQuestion = false; break;
+                case 'summary_intro': shouldAskNextQuestion = false; await generateAIPoweredContent('summary', userInputText); break;
+                case 'experience_intro': tempExperience = { title: userInputText }; break;
+                case 'experience_company': tempExperience.company = userInputText; break;
+                case 'experience_location': tempExperience.location = userInputText; break;
+                case 'experience_dates': tempExperience.dates = userInputText; break;
+                case 'experience_duties': shouldAskNextQuestion = false; tempExperience.duties = userInputText.split('\n'); await generateAIPoweredContent('experience', userInputText); break;
+                case 'experience_another':
+                    shouldAskNextQuestion = false;
+                    if (userInputText.toLowerCase().startsWith('y')) { currentStep = conversationFlow.findIndex(s => s.key === 'experience_intro'); }
+                    else { currentStep = conversationFlow.findIndex(s => s.key === 'education_intro'); }
+                    askQuestion(conversationFlow[currentStep].question);
+                    break;
+                case 'education_intro': tempEducation.degree = userInputText; break;
+                case 'education_school': tempEducation.school = userInputText; break;
+                case 'education_dates': tempEducation.dates = userInputText; resumeData.education.push(tempEducation); tempEducation = {}; break;
+                case 'education_another':
+                    shouldAskNextQuestion = false;
+                    if (userInputText.toLowerCase().startsWith('y')) { currentStep = conversationFlow.findIndex(s => s.key === 'education_intro'); }
+                    else { currentStep = conversationFlow.findIndex(s => s.key === 'skills'); }
+                    askQuestion(conversationFlow[currentStep].question);
+                    break;
+                case 'skills': resumeData.skills = userInputText; break;
+                case 'hobbies': resumeData.hobbies = skipKeywords.includes(userInputText.toLowerCase().trim()) ? '' : userInputText; break;
+            }
+            updateResumePreview();
+
+            if (isEditingState) {
+                addMessage("Thanks, I've updated that for you. Please say 'next' to continue where you left off.", 'agent');
+                currentStep = preEditStep;
+                isEditingState = false;
+            } else if (shouldAskNextQuestion) {
+                currentStep++;
+                if (conversationFlow[currentStep]) askQuestion(conversationFlow[currentStep].question);
+            }
+        }
+
+        async function handleCommand(userInputText) {
+            const lowerText = userInputText.toLowerCase();
+            if (['next', 'continue', 'proceed', 'go on', "that's good", "looks good", 'ok', 'okay'].some(cmd => lowerText.startsWith(cmd))) {
+                if (isEditingState) { // Prevent "next" from breaking edit flow
+                    addMessage("Please provide the new information first, or say 'cancel edit' to go back.", 'agent');
+                } else {
+                    currentStep++;
+                    if (conversationFlow[currentStep]) askQuestion(conversationFlow[currentStep].question);
+                }
+                return true;
+            }
+            if (lowerText === 'cancel edit') {
+                if (isEditingState) {
+                    isEditingState = false;
+                    currentStep = preEditStep;
+                    addMessage("Edit cancelled. Let's continue.", 'agent');
+                    askQuestion(conversationFlow[currentStep].question);
+                    return true;
+                }
+            }
+            if (lowerText.startsWith('edit ') || lowerText.startsWith('change ')) {
+                const section = lowerText.replace(/^(edit|change)\s+/, '').trim();
+                const keyMap = { 'name': 'name', 'full name': 'name', 'location': 'location', 'phone': 'phone', 'phone number': 'phone', 'email': 'email', 'linkedin': 'linkedin', 'portfolio': 'portfolio', 'github': 'github', 'summary': 'summary_intro', 'experience': 'experience_intro', 'education': 'education_intro', 'skills': 'skills', 'hobbies': 'hobbies' };
+                const targetKey = keyMap[section];
+                if (targetKey) {
+                    const stepIndex = conversationFlow.findIndex(s => s.key === targetKey);
+                    if (stepIndex > -1) {
+                        isEditingState = true;
+                        preEditStep = currentStep;
+                        currentStep = stepIndex;
+                        askQuestion(`Of course. What would you like to change your ${section} to?`);
+                        return true;
+                    }
+                }
+                addMessage(`I can help edit any section! Just say, for example, "edit summary" or "edit skills".`, 'agent'); return true;
+            }
+            const helpKeywords = ['do it for me','what should i write','help', 'guide', 'assist', 'not sure', 'what should i write', 'example', 'student', 'don\'t know'];
+            if (helpKeywords.some(k => lowerText.includes(k))) { await generateGuidance(userInputText); return true; }
+            return false;
+        }
+
+        async function generateAIPoweredContent(type, input) {
+            if (!GEMINI_API_KEY) {
+                let mockResponse;
+                if (type === 'summary') {
+                    mockResponse = `Highly-motivated professional with experience in ${input.split(' ')[0] || 'various fields'}. Skilled in team collaboration and driving results. Eager to contribute to a challenging and rewarding environment.`;
+                    resumeData.summary = mockResponse;
+                    askQuestion(`Without an API key, I've created a general summary for you:\n\n${mockResponse}\n\nHow does this look? You can edit it manually later. Say 'next' to continue.`);
+                } else if (type === 'experience') {
+                    mockResponse = input.split('\n').map(line => `Successfully ${line.charAt(0).toLowerCase() + line.slice(1)} contributing to team success.`);
+                    tempExperience.duties = mockResponse;
+                    resumeData.experience.push(tempExperience); tempExperience = {};
+                    askQuestion("I've rephrased your experience points with stronger verbs. Say 'next' to continue.");
+                }
+                updateResumePreview(); return;
+            }
+
+            let promptText = '';
+            if (type === 'summary') { promptText = `Based on these points, write a compelling, professional resume summary in 2-3 sentences for a candidate targeting top companies.\n\nUser's points: "${input}"`; }
+            else if (type === 'experience') { promptText = `Rewrite these resume bullet points to be more impactful. Use strong action verbs and focus on quantifiable achievements. Return ONLY a list of bullet points, each starting with a hyphen.\n\nUser's points:\n${input}`; }
+
+            addTypingIndicator();
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+                const payload = { contents: [{ parts: [{ text: promptText }] }] };
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+                const result = await response.json(); const generatedText = result.candidates[0].content.parts[0].text;
+                removeTypingIndicator(); lastAIContext = { type, rawInput: input, generatedOutput: generatedText };
+                if (type === 'summary') { resumeData.summary = generatedText; askQuestion(`Here is a draft for your summary:\n\n${generatedText}\n\nHow does this look? You can ask me to refine it, or say 'next' to continue.`); }
+                else if (type === 'experience') { tempExperience.duties = generatedText.split('\n').map(line => line.replace(/^- /, '').trim()).filter(Boolean); resumeData.experience.push(tempExperience); tempExperience = {}; askQuestion("I've refined your bullet points. Say 'next' to continue."); }
+                updateResumePreview();
+            } catch (error) {
+                removeTypingIndicator(); addMessage("My AI circuits are a bit fuzzy. Let's use the text you provided for now and you can edit it later.", 'agent');
+                if (type === 'summary') { resumeData.summary = input; askQuestion("Summary added. Say 'next' to continue.") }
+                else if (type === 'experience') { tempExperience.duties = input.split('\n'); resumeData.experience.push(tempExperience); tempExperience = {}; askQuestion("Experience added. Say 'next' to continue.") }
+                updateResumePreview();
+            }
+        }
+
+        async function generateGuidance(userInputText) {
+            addTypingIndicator();
+            if (!GEMINI_API_KEY) {
+                removeTypingIndicator();
+                const step = conversationFlow[currentStep];
+                let guidance = "";
+                switch (step.key) {
+                    case 'summary_intro':
+                        guidance = "Of course! A great summary is a 30-second pitch. Mention your title/field, experience, and 1-2 key skills. For students, focus on your passion and key projects. Example:\n\n*\"Recent Computer Science graduate with a passion for web development, skilled in JavaScript and React. Eager to apply my skills in a fast-paced environment.\"*\n\nTry writing a sentence or two like that!";
+                        break;
+                    case 'experience_duties':
+                        guidance = "Happy to help! For experience, use strong action verbs and focus on achievements. Instead of 'Responsible for managing social media', try 'Managed and grew social media accounts, increasing follower engagement by 40%.'\n\nIf you're a student, use projects:\n\n*\"Led a 4-person team to develop a full-stack web application for a university project, taking responsibility for the back-end API.\"\n\nThink about what you accomplished!";
+                        break;
+                    default:
+                        guidance = "I can certainly help. The key is to be specific and confident. Think about what makes you a great candidate and we can refine it together!";
+                        break;
+                }
+                addMessage(guidance, 'agent');
+                return;
+            }
+
+            const step = conversationFlow[currentStep];
+            const sectionName = step.key.replace('_intro', '');
+            const promptText = `You are an empathetic AI career coach. A user is stuck on the '${sectionName}' section. Their request is: "${userInputText}". Acknowledge their situation (e.g., student status). Provide clear, actionable advice and 1-2 tailored examples to help them write a great response. Keep the tone encouraging.`;
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+                const payload = { contents: [{ parts: [{ text: promptText }] }] };
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+                const result = await response.json(); const guidanceText = result.candidates[0].content.parts[0].text;
+                removeTypingIndicator();
+                addMessage(guidanceText, 'agent');
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage("I'm having a little trouble thinking of advice. Try being specific and we can edit later!", 'agent');
+            }
+        }
+
+        function addMessage(text, sender, specialAction = null) {
+            const agentAvatar = `<div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0 mr-3">AI</div>`;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-bubble p-3 rounded-xl ${sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800'}`;
+            let content = text.replace(/\n/g, '<br>');
+            if (specialAction === 'photo_upload') {
+                content += `<br><button id="upload-photo-btn" class="mt-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium">Upload Photo</button>`;
+            }
+            messageDiv.innerHTML = content;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'w-full flex' + (sender === 'user' ? ' justify-end' : ' items-start');
+            if (sender === 'agent') wrapper.innerHTML += agentAvatar;
+            wrapper.appendChild(messageDiv);
+            chatMessages.appendChild(wrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function askQuestion(question) {
+            const step = conversationFlow[currentStep];
+            const specialAction = step.key === 'photo_upload' ? 'photo_upload' : null;
+            addMessage(question, 'agent', specialAction);
+        }
+
+        function updateResumePreview() {
+            document.querySelector('[data-path="name"]').innerText = resumeData.name;
+            document.querySelector('[data-path="location"]').innerText = resumeData.location;
+            document.querySelector('[data-path="phone"]').innerText = resumeData.phone;
+            document.querySelector('[data-path="email"]').innerText = resumeData.email;
+            document.querySelector('[data-path="summary"]').innerText = resumeData.summary;
+            document.querySelector('[data-path="skills"]').innerText = resumeData.skills;
+            document.getElementById('resume-linkedin').href = resumeData.linkedin;
+            document.getElementById('resume-portfolio').href = resumeData.portfolio;
+            document.getElementById('resume-github').href = resumeData.github;
+
+            const photoContainer = document.getElementById('photo-container'), resumeHeader = document.getElementById('resume-header');
+            resumeHeader.classList.remove('photo-left', 'photo-right');
+            if (resumeData.photo.src) {
+                const photoImg = document.getElementById('resume-photo');
+                photoImg.src = resumeData.photo.src;
+                photoImg.className = 'photo-' + resumeData.photo.shape;
+                photoContainer.classList.remove('hidden');
+                resumeHeader.classList.add('has-photo', `photo-${resumeData.photo.position}`);
+            } else {
+                photoContainer.classList.add('hidden');
+                resumeHeader.classList.remove('has-photo');
+            }
+            const expList = document.getElementById('resume-experience-list');
+            if (resumeData.experience.length > 0) {
+                expList.innerHTML = resumeData.experience.map(job => `<div class="mb-5 experience-item"><div class="flex justify-between items-baseline"><h4 class="font-semibold text-lg text-slate-800" data-path="exp-title">${job.title || ''}</h4><span class="text-sm font-medium text-slate-500" data-path="exp-dates">${job.dates || ''}</span></div><div class="flex justify-between items-baseline"><p class="text-md text-slate-600 font-medium" data-path="exp-company">${job.company || ''}</p><p class="text-sm italic text-slate-500" data-path="exp-location">${job.location || ''}</p></div><ul class="list-disc list-inside mt-2 text-slate-600 space-y-2">${(job.duties || []).map(duty => `<li data-path="exp-duty">${duty}</li>`).join('')}</ul></div>`).join('');
+            } else { expList.innerHTML = `<p class="text-slate-500 italic">Your work experience will be listed here.</p>`; }
+            const eduList = document.getElementById('resume-education-list');
+            if (resumeData.education.length > 0) {
+                eduList.innerHTML = resumeData.education.map(edu => `<div class="mb-3 education-item"><div class="flex justify-between items-baseline"><h4 class="font-semibold text-lg text-slate-800" data-path="edu-degree">${edu.degree || ''}</h4><span class="text-sm font-medium text-slate-500" data-path="edu-dates">${edu.dates || ''}</span></div><p class="text-md text-slate-600" data-path="edu-school">${edu.school || ''}</p></div>`).join('');
+            } else { eduList.innerHTML = `<p class="text-slate-500 italic">Your education details will be listed here.</p>`; }
+            const hobbiesSection = document.getElementById('hobbies-section');
+            if (resumeData.hobbies) { document.getElementById('resume-hobbies').innerText = resumeData.hobbies; hobbiesSection.style.display = 'block'; } else { hobbiesSection.style.display = 'none'; }
+        }
+
+        function showPreviewModal() { modalContent.innerHTML = document.getElementById('resume-preview').innerHTML; previewModal.classList.remove('hidden'); previewModal.classList.add('flex'); }
+        function hidePreviewModal() { previewModal.classList.add('hidden'); previewModal.classList.remove('flex'); }
+        function downloadResumeAsPDF() {
+            addMessage('Generating your PDF...', 'agent');
+            const resumeElement = document.getElementById('resume-preview');
+            const opt = { margin: 0, filename: `${resumeData.name.replace(/\s+/g, '_')}_Resume.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 4, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            html2pdf().from(resumeElement).set(opt).save();
+        }
+        let isEditing = false;
+        function toggleManualEdit() {
+            isEditing = !isEditing;
+            const editableElements = document.querySelectorAll('#resume-preview [data-path]');
+            const editBtnText = editBtn;
+            if (isEditing) {
+                editBtnText.innerHTML = 'Save';
+                editBtn.classList.replace('bg-blue-100', 'bg-green-600'); editBtn.classList.replace('text-blue-700', 'text-white'); editBtn.classList.replace('hover:bg-blue-200', 'hover:bg-green-700');
+                editableElements.forEach(el => { el.contentEditable = true; el.classList.add('outline-blue-200', 'outline-dashed', 'outline-2', 'p-1', 'rounded'); });
+                addMessage('You can now edit your resume directly. Click "Save" when finished.', 'agent');
+            } else {
+                editBtnText.innerHTML = 'Edit';
+                editBtn.classList.replace('bg-green-600', 'bg-blue-100'); editBtn.classList.replace('text-white', 'text-blue-700'); editBtn.classList.replace('hover:bg-green-700', 'hover:bg-blue-200');
+                editableElements.forEach(el => { el.contentEditable = false; el.classList.remove('outline-blue-200', 'outline-dashed', 'outline-2', 'p-1', 'rounded'); });
+                syncResumeDataFromDOM();
+                addMessage('Your manual edits have been saved.', 'agent');
+            }
+        }
+        function syncResumeDataFromDOM() {
+            resumeData.name = document.querySelector('[data-path="name"]').innerText;
+            resumeData.location = document.querySelector('[data-path="location"]').innerText;
+            resumeData.phone = document.querySelector('[data-path="phone"]').innerText;
+            resumeData.email = document.querySelector('[data-path="email"]').innerText;
+            resumeData.summary = document.querySelector('[data-path="summary"]').innerText;
+            resumeData.skills = document.querySelector('[data-path="skills"]').innerText;
+            resumeData.hobbies = document.querySelector('[data-path="hobbies"]').innerText;
+            const experienceItems = document.querySelectorAll('#resume-experience-list .experience-item');
+            resumeData.experience = Array.from(experienceItems).map(item => ({ title: item.querySelector('[data-path="exp-title"]').innerText, dates: item.querySelector('[data-path="exp-dates"]').innerText, company: item.querySelector('[data-path="exp-company"]').innerText, location: item.querySelector('[data-path="exp-location"]').innerText, duties: Array.from(item.querySelectorAll('[data-path="exp-duty"]')).map(li => li.innerText) }));
+            const educationItems = document.querySelectorAll('#resume-education-list .education-item');
+            resumeData.education = Array.from(educationItems).map(item => ({ degree: item.querySelector('[data-path="edu-degree"]').innerText, dates: item.querySelector('[data-path="edu-dates"]').innerText, school: item.querySelector('[data-path="edu-school"]').innerText }));
+        }
+        function addTypingIndicator() { const indicator = document.createElement('div'); indicator.id = 'typing-indicator'; indicator.className = 'w-full flex items-start'; indicator.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0 mr-3">AI</div><div class="chat-bubble p-3 rounded-xl bg-slate-100 self-start typing-indicator"><span></span><span></span><span></span></div>`; chatMessages.appendChild(indicator); chatMessages.scrollTop = chatMessages.scrollHeight; }
+        function removeTypingIndicator() { const indicator = document.getElementById('typing-indicator'); if (indicator) indicator.remove(); }
+
+        function init() { askQuestion(conversationFlow[0].question); }
+        init();
+    </script>
+</body>
+
+</html>
